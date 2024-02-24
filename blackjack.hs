@@ -7,7 +7,7 @@ data Result = EndOfGame State Double
             deriving (Eq, Show)
 
 -- Interal State, Players Bet, Players Balance, turn (player = 0, comp = 1, dealer = 2), Player stand, comp stand, dealer stand
-data State = State InternalState Double Double Double Double Double Double
+data State = State InternalState Double Double Double Double Double Double Double Double
             deriving (Eq, Show)
 
 -- Players Cards, Computer Cards, Dealer Cards, Deck
@@ -26,35 +26,37 @@ data Action = Hit
 -- type Deck = [Card]
 
 blackjack :: Game
-blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) bet balance turn pStand cStand dStand)
-    | turn == 0 && cStand == 1 && dStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 0 pStand cStand dStand)
-    | turn == 0 && cStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand)
-    | turn == 0 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 1 pStand cStand dStand)
-    | turn == 1 && dStand == 1 && pStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 1 pStand cStand dStand)
-    | turn == 1 && dStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 0 pStand cStand dStand)
-    | turn == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand)
-    | turn == 2 && pStand == 1 && cStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand)
-    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet balance 1 pStand cStand dStand)
-    | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet balance 0 pStand cStand dStand)
+blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) bet balance turn pStand cStand dStand pBust cBust)
+    | turn == 0 && cStand == 1 && dStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 0 pStand cStand dStand pBust cBust)
+    | turn == 0 && cStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand pBust cBust)
+    | turn == 0 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 1 pStand cStand dStand pBust cBust)
+    | turn == 1 && dStand == 1 && pStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 1 pStand cStand dStand pBust cBust)
+    | turn == 1 && dStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 0 pStand cStand dStand pBust cBust)
+    | turn == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand pBust cBust)
+    | turn == 2 && pStand == 1 && cStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet balance 2 pStand cStand dStand pBust cBust)
+    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet balance 1 pStand cStand dStand pBust cBust)
+    | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet balance 0 pStand cStand dStand pBust cBust)
 
-blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand)
-    | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand) 4
-    | turn == 0 && cStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 2 1 cStand dStand)
-    | turn == 0 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 1 cStand dStand)
-    | turn == 1 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand) 4
-    | turn == 1 && dStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 0 pStand 1 dStand)
-    | turn == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 pStand 1 dStand)
-    | turn == 2 && pStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand) 4
-    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 pStand cStand 1)
-    | otherwise = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 0 pStand cStand 1)
+blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust)
+    | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 3
+    | turn == 0 && cStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 2 1 cStand dStand pBust cBust)
+    | turn == 0 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 1 cStand dStand pBust cBust)
+    | turn == 1 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 3
+    | turn == 1 && dStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 0 pStand 1 dStand pBust cBust)
+    | turn == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 pStand 1 dStand pBust cBust)
+    | turn == 2 && pStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 3
+    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 1 pStand cStand 1 pBust cBust)
+    | otherwise = checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance 0 pStand cStand 1 pBust cBust)
     
 
 checkBust :: State -> Result
-checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand)
-    | getHandValue playerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand) 0
-    -- | getHandValue computerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand)
-    -- | getHandValue dealerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand) 3
-    | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand)
+checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust)
+    | getHandValue playerHand > 21 && cBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 4
+    | getHandValue computerHand > 21 && pBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 4
+    | getHandValue playerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn 1 cStand dStand 1 cBust)
+    | getHandValue computerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust 1)
+    | getHandValue dealerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 3
+    | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust)
 
 getHandValue :: (Foldable t, Num b) => t (a, b) -> b
 getHandValue hand = foldr (\ (x,y) z -> y + z) 0 hand
@@ -69,11 +71,11 @@ start :: IO Balances
 start = do
     putStrLn "OMG BLACKJACK, how much do you want to deposit?"
     deposit <- getNumber
-    play blackjack (State ([], [], [], fullDeck) 0 deposit 0 0 0 0) (deposit, deposit)
+    play blackjack (State ([], [], [], fullDeck) 0 deposit 0 0 0 0 0 0) (deposit, deposit)
     
 
 play :: Game -> State -> Balances-> IO Balances
-play game state balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do
+play game state balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     putStrLn "How much you betting?"
     newbet <- (getBet balance)
     let (ContinueGame state2) = game Hit state
@@ -82,12 +84,12 @@ play game state balances = let (State (playerHand, computerHand, dealerHand, dec
     let (ContinueGame state5) = game Hit state4
     let (ContinueGame state6) = game Hit state5
     let (ContinueGame state7) = game Hit state6
-    let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state7 in do
-        personPlay game (ContinueGame (State (playerHand, computerHand, dealerHand, deck) newbet balance 0 0 0 0)) balances
+    let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state7 in do
+        personPlay game (ContinueGame (State (playerHand, computerHand, dealerHand, deck) newbet balance 0 0 0 0 0 0)) balances
 
 
 personPlay :: Game -> Result -> Balances -> IO Balances
-personPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do
+personPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     putStrLn ("\nYour Cards: " ++ show playerHand)
     putStrLn ("Computer's Cards: " ++ show computerHand)
     putStrLn ("Dealer's Cards: " ++ show dealerHand)
@@ -111,27 +113,40 @@ personPlay game (ContinueGame state) balances = let (State (playerHand, computer
         putStrLn "That is not a valid input."
         personPlay game (ContinueGame state) balances
 
-personPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do
+personPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     if lost == 0 then do
         putStrLn "\nYou bust"
         if (x - bet) == 0 then do
             putStrLn ("You lose. The computer had " ++ show y ++ " money remaining.")
             start
         else
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x - bet, y)
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x - bet, y)
     else if lost == 2 then do
         putStrLn "\nDealer bust"
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x + bet, y + bet)
+        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y + bet)
+    -- else if lost == 3 then do
+    --     let dealerValue = getHandValue dealerHand
+    --     let playerValue = getHandValue playerHand
+    --     let computerValue = getHandValue computerHand
+    --     if playerValue > dealerValue && computerValue > dealerValue then do
+    --         putStrLn ("You and the computer beat the dealer")
+    --         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x + bet, y + bet)
+    --     else if playerValue > dealerValue && computerValue == dealerValue then do 
+    --         putStrLn ("You beat the dealer, computer tied")
+    --         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x + bet, y)
+    --     else if playerValue > dealerValue && computerValue < dealerValue then do 
+    --         putStrLn ("You beat the dealer, computer loss")
+    --         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x + bet, y - bet)
     else
         if (y - bet) == 0 then do
             putStrLn ("\nYou win! You had " ++ show x ++ " money remaining.")
             start
         else
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x, y - bet)
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
 
 
 computerPlay :: (Action -> State -> Result) -> Result -> Balances -> IO Balances
-computerPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do 
+computerPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do 
     -- putStrLn ("\nYour Cards " ++ show playerHand)
     -- putStrLn ("Computer's Cards" ++ show computerHand)
     -- putStrLn ("Dealer's Cards" ++ show dealerHand)
@@ -143,7 +158,7 @@ computerPlay game (ContinueGame state) balances = let (State (playerHand, comput
     else 
         dealerPlay game (game Hit state) balances
 
-computerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do
+computerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     if lost == 0 then do
         putStrLn "\nYou bust"
         let (playerBal, compBal) = (x - bet, y)
@@ -155,15 +170,15 @@ computerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, compute
             start
         else do
             putStrLn "\n"
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (playerBal, compBal)
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (playerBal, compBal)
     else if lost == 2 then do
         putStrLn "Dealer bust"
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x + bet, y + bet)
+        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y + bet)
     else 
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (x, y - bet)
+        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
 
 dealerPlay :: (Action -> State -> Result) -> Result -> Balances -> IO Balances
-dealerPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand) = state in do 
+dealerPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do 
     -- putStrLn ("\nYour Cards " ++ show playerHand)
     -- putStrLn ("Computer's Cards" ++ show computerHand)
     -- putStrLn ("Dealer's Cards" ++ show dealerHand)
@@ -187,7 +202,7 @@ dealerPlay game (ContinueGame state) balances = let (State (playerHand, computer
 
 
 dealerPlay game (EndOfGame state lost) balances = do
-    play game (State ([], [], [], fullDeck) 0 0 0 0 0 0) (0, 0)
+    play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (0, 0)
     
 -- this is straight stole from another project
 getNumber :: IO Double
@@ -214,4 +229,4 @@ getBet balance = do
         return bet
     
 yep :: State
-yep = State ([('h',5),('h',10)], [], [], [('h',6)]) 10 1000 2 0 0 0
+yep = State ([('h',5),('h',10)], [], [], [('h',6)]) 10 1000 2 0 0 0 0 0
