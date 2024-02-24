@@ -25,6 +25,8 @@ data Action = Hit
 -- type ComputerHand = [Card]
 -- type Deck = [Card]
 
+-- test
+
 blackjack :: Game
 blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) bet balance turn pStand cStand dStand)
     | turn == 0 && cStand == 1 && dStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet balance 0 pStand cStand dStand)
