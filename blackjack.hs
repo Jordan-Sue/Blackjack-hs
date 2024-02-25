@@ -164,23 +164,24 @@ computerPlay game (ContinueGame state) balances = let (State (playerHand, comput
         dealerPlay game (game Hit state) balances
 
 computerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
-    if lost == 0 then do
-        putStrLn "\nYou bust"
-        let (playerBal, compBal) = (x - bet, y)
-        putStrLn ("\nPlayer Balance: " ++ show playerBal)
-        putStrLn ("Computer's Balance: " ++ show compBal)
+    -- if lost == 0 then do
+    --     putStrLn "\nYou bust"
+    --     let (playerBal, compBal) = (x - bet, y)
+    --     putStrLn ("\nPlayer Balance: " ++ show playerBal)
+    --     putStrLn ("Computer's Balance: " ++ show compBal)
 
-        if playerBal == 0 then do
-            putStrLn "\nYou lose.\n\n"
-            start
-        else do
-            putStrLn "\n"
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (playerBal, compBal)
-    else if lost == 2 then do
-        putStrLn "Dealer bust"
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y + bet)
-    else 
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
+    --     if playerBal == 0 then do
+    --         putStrLn "\nYou lose.\n\n"
+    --         start
+    --     else do
+    --         putStrLn "\n"
+    --         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (playerBal, compBal)
+    -- else if lost == 2 then do
+    --     putStrLn "Dealer bust"
+    --     play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y + bet)
+    -- else 
+    --     play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
+    dealerPlay game (EndOfGame state lost) (x,y)
 
 dealerPlay :: (Action -> State -> Result) -> Result -> Balances -> IO Balances
 dealerPlay game (ContinueGame state) balances = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do 
@@ -214,39 +215,78 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
         if (pBust == 1) then do
             putStrLn "\nPlayer Busted"
             putStrLn "Dealer Bust\n"
-            play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y + bet)
+            if (checkIfOutOfMoney (x - bet)) then do
+                playerOutOfMoneyStatement (x - bet,y)
+            else do 
+                play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y + bet)
         else if (cBust == 1) then do
             putStrLn "\nComputer Busted"
             putStrLn "Dealer Bust\n"
-            play game (State ([], [], [], fullDeck) 0 (x + bet) 0 0 0 0 0 0) (x + bet, y - bet)  
+            if (checkIfOutOfMoney (y - bet)) then do
+                computerOutOfMoneyStatement (x,y - bet)
+            else do 
+                play game (State ([], [], [], fullDeck) 0 (x + bet) 0 0 0 0 0 0) (x + bet, y - bet)  
         else do 
             putStrLn "\nDealer Bust\n"
             play game (State ([], [], [], fullDeck) 0 (x + bet) 0 0 0 0 0 0) (x + bet, y + bet) 
     else if pBust == 1 && cBust == 1 then do
         putStrLn "\nPlayer and Computer Bust, Dealer Wins"
-        play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
+        if (checkIfOutOfMoney (y- bet) && checkIfOutOfMoney (x - bet)) then do
+            bothOutOfMoneyStatement (x,y - bet)
+        else if (checkIfOutOfMoney (y - bet)) then do
+            computerOutOfMoneyStatement (x,y - bet)
+        else if (checkIfOutOfMoney (x - bet)) then do 
+            playerOutOfMoneyStatement (x - bet,y)
+        else do
+            play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
     else if pBust == 1 then do
         putStrLn "\nPlayer Bust"
         if (getHandValue computerHand > getHandValue dealerHand) then do
             putStrLn "Computer beat Dealer\n"
-            play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y + bet)
+            if (checkIfOutOfMoney (x - bet)) then do
+                playerOutOfMoneyStatement (x - bet,y)
+            else do 
+                play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y + bet)
         else if (getHandValue computerHand < getHandValue dealerHand) then do
             putStrLn "Dealer beat Computer\n"
-            play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
-        else do
-            putStrLn "Computer tied Dealer\n"
-            play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y)
+            if (checkIfOutOfMoney (y- bet) && checkIfOutOfMoney (x - bet)) then do
+                bothOutOfMoneyStatement (x - bet, y - bet)
+            else if (checkIfOutOfMoney (y - bet)) then do
+                computerOutOfMoneyStatement (x,y - bet)
+            else if (checkIfOutOfMoney (x - bet)) then do 
+                playerOutOfMoneyStatement (x - bet,y)
+            else do
+                play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
+            else do
+                putStrLn "Computer tied Dealer\n"
+                if (checkIfOutOfMoney (x - bet)) then do
+                    playerOutOfMoneyStatement (x - bet,y)
+                else do 
+                    play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y)
     else if cBust == 1 then do 
         putStrLn "\nComputer Bust"
         if (getHandValue playerHand > getHandValue dealerHand) then do
             putStrLn "Player beat Dealer\n"
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y - bet)
+            if (checkIfOutOfMoney (y - bet)) then do
+                computerOutOfMoneyStatement (x,y - bet)
+            else do 
+                play game (State ([], [], [], fullDeck) 0 (x + bet) 0 0 0 0 0 0) (x + bet, y - bet) 
         else if (getHandValue playerHand < getHandValue dealerHand) then do
             putStrLn "Dealer beat Player\n"
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x - bet, y - bet)
+            if (checkIfOutOfMoney (y- bet) && checkIfOutOfMoney (x - bet)) then do
+                bothOutOfMoneyStatement (x - bet ,y - bet)
+            else if (checkIfOutOfMoney (y - bet)) then do
+                computerOutOfMoneyStatement (x,y - bet)
+            else if (checkIfOutOfMoney (x - bet)) then do 
+                playerOutOfMoneyStatement (x - bet,y)
+            else do
+                play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
         else do
             putStrLn "Player tied Dealer\n"
-            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
+            if (checkIfOutOfMoney (y - bet)) then do
+                computerOutOfMoneyStatement (x,y - bet)
+            else do 
+                play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
     else do
         winnerChecker game state (x,y)
 
@@ -270,15 +310,50 @@ checkComputerWinPlayerWin game state (x,y) = let (State (playerHand, computerHan
     let dealerValue = getHandValue dealerHand
     if (computerValue > dealerValue) then do 
         putStrLn ("Computer beat Dealer\n")
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y + bet)
+        if (checkIfOutOfMoney x) then do
+            playerOutOfMoneyStatement (x,y)
+        else do 
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y + bet)
     else if (computerValue == dealerValue) then do 
         putStrLn ("Computer tied Dealer\n")
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y)
+        if (checkIfOutOfMoney x) then do
+            playerOutOfMoneyStatement (x,y)
+        else do 
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y)
     else do
         putStrLn ("Dealer beat Computer")
+        if (checkIfOutOfMoney x) then do
+            playerOutOfMoneyStatement (x,y)
+        else if (checkIfOutOfMoney (y -bet)) then do 
+            computerOutOfMoneyStatement (x,y)
+        else do 
+            play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
 
-        play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y - bet)
+checkIfOutOfMoney :: Double  -> Bool
+checkIfOutOfMoney balance 
+    | balance == 0 = True
+    | otherwise = False
 
+playerOutOfMoneyStatement :: Balances -> IO Balances
+playerOutOfMoneyStatement (x,y) = do
+    putStrLn ("Your Balance: " ++ show x)
+    putStrLn ("Computer's Balance: " ++ show y)
+    putStrLn "You're out of money you LOSE\n"
+    start 
+
+computerOutOfMoneyStatement :: Balances -> IO Balances
+computerOutOfMoneyStatement (x,y) = do
+    putStrLn ("Your Balance: " ++ show x)
+    putStrLn ("Computer's Balance: " ++ show y)
+    putStrLn "Computer out of money you WIN\n"
+    start 
+
+bothOutOfMoneyStatement :: Balances -> IO Balances
+bothOutOfMoneyStatement (x,y) = do
+    putStrLn ("Your Balance: " ++ show x)
+    putStrLn ("Computer's Balance: " ++ show y)
+    putStrLn "Both out of money you TIE\n"
+    start 
     
 -- this is straight stole from another project
 getNumber :: IO Double
@@ -307,6 +382,8 @@ getBet balance = do
 yep :: State
 yep = State ([('h',5),('h',10)], [], [], [('h',6)]) 10 1000 2 0 0 0 0 0
 
+
+-- dealerPlay blackjack (Continue `state`) (100,100)
 allTie :: State
 allTie = State ([('h',10),('h',10)], [('h',10),('h',10)], [('h',10),('h',10)], [('h',6)]) 10 1000 2 1 1 0 0 0
 
@@ -331,5 +408,12 @@ compWinPlayerTie = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('
 dealerBust :: State
 dealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6)]) 10 1000 2 1 1 0 0 0
 
-compBustIfHit :: State
-compBustIfHit = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6), ('h',6)]) 10 1000 1 0 0 0 0 0
+computerNoMoney :: State
+computerNoMoney = State ([('h',10),('h',11)], [('h',10),('h',9)], [('h',10),('h',10)], [('h',6)]) 100 1000 2 1 1 0 0 0
+
+playerNoMoney :: State
+playerNoMoney = State ([('h',10),('h',9)], [('h',10),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 1000 2 1 1 0 0 0
+
+-- computerPlay blackjack (Continue `state`) (100,100)
+compBustDealerBust :: State
+compBustDealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6), ('h',6)]) 10 1000 1 0 0 0 0 0
