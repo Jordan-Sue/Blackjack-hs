@@ -58,8 +58,23 @@ checkBust (State (playerHand, computerHand, dealerHand, deck) bet balance turn p
     | getHandValue dealerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand 1 dStand pBust cBust) 3
     | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust)
 
-getHandValue :: (Foldable t, Num b) => t (a, b) -> b
-getHandValue hand = foldr (\ (x,y) z -> y + z) 0 hand
+getHandValue :: (Ord b, Num b, Foldable t) => t (a, b) -> b
+getHandValue hand = do
+    let aces = foldr (\ (x,y) z -> if y == 1 then z + 1 else z) 0 hand
+    if aces > 0 then do
+        getBestValue (getAceValues hand aces)
+    else
+        foldr (\ (x,y) z -> y + z) 0 hand
+
+getAceValues :: (Ord t1, Num t1, Foldable t2) => t2 (a, t1) -> t1 -> [t1]
+getAceValues hand aces
+    | aces > 0 = (foldr (\ (x,y) z -> y + z) 0 hand) + (10 * aces) : getAceValues hand (aces - 1)
+    | otherwise = [foldr (\ (x,y) z -> y + z) 0 hand]
+
+getBestValue :: (Ord t, Num t) => [t] -> t
+getBestValue (h:t)
+    | length t > 0 = if h > 21 then getBestValue t else h
+    | otherwise = h
 
 -- copy and pasted so yeah
 fullDeck :: [Card]
@@ -208,29 +223,29 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
     putStrLn ("Computer's Cards: " ++ show computerHand)
     putStrLn ("Dealer's Cards: " ++ show dealerHand)
     if pBust == 1 && cBust == 1 then do
-        putStrLn ("\nPlayer and Computer Bust, Dealer Wins")
+        putStrLn "\nPlayer and Computer Bust, Dealer Wins"
         play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
     else if pBust == 1 then do
-        putStrLn ("\nPlayer Bust")
+        putStrLn "\nPlayer Bust"
         if (getHandValue computerHand > getHandValue dealerHand) then do
-            putStrLn ("Computer beat Dealer\n")
+            putStrLn "Computer beat Dealer\n"
             play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y + bet)
         else if (getHandValue computerHand < getHandValue dealerHand) then do
-            putStrLn ("Dealer beat Computer\n")
+            putStrLn "Dealer beat Computer\n"
             play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y - bet)
         else do
-            putStrLn ("Computer tied Dealer\n")
+            putStrLn "Computer tied Dealer\n"
             play game (State ([], [], [], fullDeck) 0 (x - bet) 0 0 0 0 0 0) (x - bet, y)
     else if cBust == 1 then do 
-        putStrLn ("\nComputer Bust")
+        putStrLn "\nComputer Bust"
         if (getHandValue playerHand > getHandValue dealerHand) then do
-            putStrLn ("Player beat Dealer\n")
+            putStrLn "Player beat Dealer\n"
             play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y - bet)
         else if (getHandValue playerHand < getHandValue dealerHand) then do
-            putStrLn ("Dealer beat Player\n")
+            putStrLn "Dealer beat Player\n"
             play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x - bet, y - bet)
         else do
-            putStrLn ("Player tied Dealer\n")
+            putStrLn "Player tied Dealer\n"
             play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x, y - bet)
     else do
         winnerChecker game state (x,y)
@@ -239,28 +254,28 @@ winnerChecker :: (Action -> State -> Result) -> State -> Balances -> IO Balances
 winnerChecker game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     let playerValue = getHandValue playerHand
     let dealerValue = getHandValue dealerHand
-    if  (playerValue > dealerValue) then do
-        putStrLn ("Player beat Dealer\n")
+    if  playerValue > dealerValue then do
+        putStrLn "Player beat Dealer\n"
         checkComputerWinPlayerWin game state (x,y)
-    else if (playerValue < dealerValue) then do
-        putStrLn ("Dealer beat Player\n")
+    else if playerValue < dealerValue then do
+        putStrLn "Dealer beat Player\n"
         checkComputerWinPlayerWin game state (x,y)
     else do
-        putStrLn ("Player tied Dealer\n")
+        putStrLn "Player tied Dealer\n"
         checkComputerWinPlayerWin game state (x,y)
 
 checkComputerWinPlayerWin :: (Action -> State -> Result) -> State -> Balances -> IO Balances
 checkComputerWinPlayerWin game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet balance turn pStand cStand dStand pBust cBust) = state in do
     let computerValue = getHandValue computerHand
     let dealerValue = getHandValue dealerHand
-    if (computerValue > dealerValue) then do 
-        putStrLn ("Computer beat Dealer")
+    if computerValue > dealerValue then do 
+        putStrLn "Computer beat Dealer"
         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y + bet)
-    else if (computerValue == dealerValue) then do 
-        putStrLn ("Computer tied Dealer")
+    else if computerValue == dealerValue then do 
+        putStrLn "Computer tied Dealer"
         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y)
     else do
-        putStrLn ("Dealer beat Computer")
+        putStrLn "Dealer beat Computer"
 
         play game (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0) (x + bet, y - bet)
 
