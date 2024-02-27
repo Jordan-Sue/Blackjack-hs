@@ -80,8 +80,8 @@ blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet cou
 checkBust :: State -> Result
 checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust)
     | getHandValue dealerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 2
-    | getHandValue playerHand > 21 && cBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 4
-    | getHandValue computerHand > 21 && pBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 4
+    | getHandValue playerHand > 21 && cBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand 1 cBust) 4
+    | getHandValue computerHand > 21 && pBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust 1) 4
     | getHandValue playerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn 1 cStand dStand 1 cBust)
     | getHandValue computerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust 1)
     | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust)
@@ -111,13 +111,13 @@ getHandValue hand = do
     else
         foldr (\ (x,y) z -> y + z) 0 hand
 
--- decides whether or not to make the ace worth 1 or 11
+-- gets all possible values of a hand containing aces number of aces
 getAceValues :: (Ord t1, Num t1, Foldable t2) => t2 (a, t1) -> t1 -> [t1]
 getAceValues hand aces
     | aces > 0 = (foldr (\ (x,y) z -> y + z) 0 hand) + (10 * aces) : getAceValues hand (aces - 1)
     | otherwise = [foldr (\ (x,y) z -> y + z) 0 hand]
 
-
+-- get's the highest number >= to 21
 getBestValue :: (Ord t, Num t) => [t] -> t
 getBestValue (h:t)
     | length t > 0 = if h > 21 then getBestValue t else h
@@ -267,11 +267,11 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
     else if pBust == 1 && cBust == 1 then do
         putStrLn "\nPlayer and Computer Bust, Dealer Wins"
         if checkIfOutOfMoney (y - cbet) && checkIfOutOfMoney (x - bet) then do
-            bothOutOfMoneyStatement (x, y - cbet)
+            bothOutOfMoneyStatement (x - bet, y - cbet)
         else if checkIfOutOfMoney (y - cbet) then do
-            computerOutOfMoneyStatement (x, y - cbet)
+            computerOutOfMoneyStatement (x - bet, y - cbet)
         else if checkIfOutOfMoney (x - bet) then do 
-            playerOutOfMoneyStatement (x - bet, y)
+            playerOutOfMoneyStatement (x - bet, y - bet)
         else do
             play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y - cbet)
     else if pBust == 1 then do
@@ -457,4 +457,4 @@ playerNoMoney = State ([('h',10),('h',9)], [('h',10),('h',11)], [('h',10),('h',1
 
 -- computerPlay blackjack (Continue `state`) (100,100)
 compBustDealerBust :: State
-compBustDealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6), ('h',6)]) 10 100 0 1 0 0 0 0 0
+compBustDealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',7)], [('h',6), ('h',6)]) 10 100 0 1 0 0 0 0 0
