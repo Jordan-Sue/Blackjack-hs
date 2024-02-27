@@ -4,24 +4,8 @@ import Data.Array.IO
 import Control.Monad
 import System.IO.Unsafe
 
--- Taken from https://wiki.haskell.org/Random_shuffle
-shuffle :: [a] -> IO [a]
-shuffle xs = do
-        ar <- newArray n xs
-        forM [1..n] $ \i -> do
-            j <- randomRIO (i,n)
-            vi <- readArray ar i
-            vj <- readArray ar j
-            writeArray ar j vi
-            return vj
-  where
-    n = length xs
-    newArray :: Int -> [a] -> IO (IOArray Int a)
-    newArray n xs =  newListArray (1,n) xs
-
 -- :set -package random
 -- :set -package array
--- :set -package time
 
 type Game = Action -> State -> Result
 
@@ -42,23 +26,40 @@ type Card = (Char, Int)
 data Action = Hit
             | Stand
             deriving (Eq, Show)
+-- (Suit, Number)
+type Balances = (Double, Double)
 
 -- type PlayerHand = [Card]
 -- type DealerHand = [Card]
 -- type ComputerHand = [Card]
 -- type Deck = [Card]
 
+-- Taken from https://wiki.haskell.org/Random_shuffle
+shuffle :: [a] -> IO [a]
+shuffle xs = do
+        ar <- newArray n xs
+        forM [1..n] $ \i -> do
+            j <- randomRIO (i,n)
+            vi <- readArray ar i
+            vj <- readArray ar j
+            writeArray ar j vi
+            return vj
+  where
+    n = length xs
+    newArray :: Int -> [a] -> IO (IOArray Int a)
+    newArray n xs =  newListArray (1,n) xs
+
 blackjack :: Game
 blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) bet cbet count turn pStand cStand dStand pBust cBust)
     | turn == 0 && cStand == 1 && dStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 0 pStand cStand dStand pBust cBust)
-    | turn == 0 && cStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet cbet count 2 pStand cStand dStand pBust cBust)
-    | turn == 0 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet cbet count 1 pStand cStand dStand pBust cBust)
-    | turn == 1 && dStand == 1 && pStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet count 1 pStand cStand dStand pBust cBust)
-    | turn == 1 && dStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet count 0 pStand cStand dStand pBust cBust)
-    | turn == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet count 2 pStand cStand dStand pBust cBust)
-    | turn == 2 && pStand == 1 && cStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet count 2 pStand cStand dStand pBust cBust)
-    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet count 1 pStand cStand dStand pBust cBust)
-    | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet count 0 pStand cStand dStand pBust cBust)
+    | turn == 0 && cStand == 1 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 2 pStand cStand dStand pBust cBust)
+    | turn == 0 = checkBust (State (firstCard:playerHand, computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 1 pStand cStand dStand pBust cBust)
+    | turn == 1 && dStand == 1 && pStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 1 pStand cStand dStand pBust cBust)
+    | turn == 1 && dStand == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 0 pStand cStand dStand pBust cBust)
+    | turn == 1 = checkBust (State (playerHand, firstCard:computerHand, dealerHand, tailDeck) bet cbet (updateCount firstCard count) 2 pStand cStand dStand pBust cBust)
+    | turn == 2 && pStand == 1 && cStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet (updateCount firstCard count) 2 pStand cStand dStand pBust cBust)
+    | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet (updateCount firstCard count) 1 pStand cStand dStand pBust cBust)
+    | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet (updateCount firstCard count) 0 pStand cStand dStand pBust cBust)
 
 blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust)
     | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 3
@@ -118,8 +119,6 @@ fullDeck = do
     let oneDeck = [(suit, if value < 11 then value else 10) | suit <- ['s','d','h','c'], value <- [1..13]]
     unsafePerformIO (shuffle (oneDeck ++ oneDeck ++ oneDeck ++ oneDeck ++ oneDeck ++ oneDeck))
 
-type Balances = (Double, Double)
-
 start :: IO Balances
 start = do
     putStrLn "OMG BLACKJACK, how much do you want to deposit?"
@@ -178,6 +177,21 @@ computerPlay game (ContinueGame state) balances = let (State (playerHand, comput
     -- putStrLn ("Your Cards " ++ show playerHand)
     -- putStrLn ("Computer's Cards" ++ show computerHand)
     -- putStrLn ("Dealer's Cards" ++ show dealerHand)
+
+    -- let aces = foldr (\ (x,y) z -> if y == 1 then z + 1 else z) 0 hand
+    -- if aces == 0 then do
+    --     let hard = True
+    -- else do
+    --     let hard = False
+    
+    -- if hard then do
+    --     if getHandValue computerHand >= 17 then do
+    --         let stand = True
+    --     else do
+    --         let stand = True
+    -- else do
+    --     let stand = False
+
     putStrLn "\nComputer Hit"
     -- !!!
 
