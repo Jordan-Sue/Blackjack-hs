@@ -62,6 +62,7 @@ blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) 
     | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet (updateCount firstCard count) 1 pStand cStand dStand pBust cBust)
     | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet (updateCount firstCard count) 0 pStand cStand dStand pBust cBust)
 
+-- Stand function that checks whose turn it is updates the state so show that they stood, if all stand then return EndOfGame state
 blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust)
     | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 3
     | turn == 0 && cStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 2 1 cStand dStand pBust cBust)
@@ -134,7 +135,7 @@ start = do
     deposit <- getNumber
     play blackjack (State ([], [], [], fullDeck) 0 0 0 0 0 0 0 0 0) (deposit, deposit)
     
-
+-- Starts a round of blackjack with two cards in each hand
 play :: Game -> State -> Balances-> IO Balances
 play game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
     putStrLn ("Your Balance: " ++ show x)
@@ -177,10 +178,11 @@ personPlay game (ContinueGame state) balances = let (State (playerHand, computer
         putStrLn "That is not a valid input."
         personPlay game (ContinueGame state) balances
 
+-- delegates EndOfGame state to dealerPlay
 personPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
     dealerPlay game (EndOfGame state lost) (x,y)
 
-
+-- Decides whether one should stand depending on the other hands
 shouldStand :: (Ord a1, Ord a2, Num a3, Num a1, Num a2, Eq a3) => a3 -> a1 -> a2 -> Bool
 shouldStand aces handVal upCard = do
     if aces == 0 then do
@@ -220,6 +222,7 @@ computerPlay game (ContinueGame state) balances = let (State (playerHand, comput
         else 
             dealerPlay game (game Hit state) balances
 
+-- delegates EndOfGame state to dealerPlay
 computerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
     dealerPlay game (EndOfGame state lost) (x,y)
 
