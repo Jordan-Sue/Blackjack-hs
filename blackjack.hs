@@ -328,7 +328,7 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
             else do 
                 play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x, y - cbet)
     else do
-        winnerChecker game state (x,y)
+        winnerCheckerIfAllStand game state (x,y)
 
 -- If the player and the computer stood, see who won the round depending on hand values
 winnerCheckerIfAllStand :: (Action -> State -> Result) -> State -> Balances -> IO Balances
