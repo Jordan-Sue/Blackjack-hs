@@ -68,7 +68,7 @@ blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet cou
     | turn == 0 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 1 1 cStand dStand pBust cBust)
     | turn == 1 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 3
     | turn == 1 && dStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 0 pStand 1 dStand pBust cBust)
-    | turn == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 1 pStand 1 dStand pBust cBust)
+    | turn == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 2 pStand 1 dStand pBust cBust)
     | turn == 2 && pStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust cBust) 3
     | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 1 pStand cStand 1 pBust cBust)
     | otherwise = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count 0 pStand cStand 1 pBust cBust)
@@ -84,7 +84,7 @@ checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet count tur
     | getHandValue computerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand 1 dStand pBust 1)
     | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust)
 
--- updates the card counting value
+-- updates the counter
 updateCount :: (Ord a1, Num a1, Fractional a2) => (a3, a1) -> a2 -> a2
 updateCount (x, y) cur_count = do
     if y > 9 || y == 1 then
@@ -272,11 +272,11 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
     else if pBust == 1 && cBust == 1 then do
         putStrLn "\nPlayer and Computer Bust, Dealer Wins"
         if checkIfOutOfMoney (y - cbet) && checkIfOutOfMoney (x - bet) then do
-            bothOutOfMoneyStatement (x, y - cbet)
+            bothOutOfMoneyStatement (x - bet, y - cbet)
         else if checkIfOutOfMoney (y - cbet) then do
-            computerOutOfMoneyStatement (x, y - cbet)
+            computerOutOfMoneyStatement (x - bet, y - cbet)
         else if checkIfOutOfMoney (x - bet) then do 
-            playerOutOfMoneyStatement (x - bet, y)
+            playerOutOfMoneyStatement (x - bet, y - cbet)
         else do
             play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y - cbet)
     else if pBust == 1 then do
@@ -284,43 +284,29 @@ dealerPlay game (EndOfGame state lost) (x,y) = let (State (playerHand, computerH
         if getHandValue computerHand > getHandValue dealerHand then do
             putStrLn "Computer beat Dealer\n"
             if checkIfOutOfMoney (x - bet) then do
-                playerOutOfMoneyStatement (x - bet, y)
+                playerOutOfMoneyStatement (x - bet, y + cbet)
             else do 
                 play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y + cbet)
         else if getHandValue computerHand < getHandValue dealerHand then do
             putStrLn "Dealer beat Computer\n"
-            if checkIfOutOfMoney (y - cbet) && checkIfOutOfMoney (x - bet) then do
-                bothOutOfMoneyStatement (x - bet, y - cbet)
-            else if checkIfOutOfMoney (y - cbet) then do
-                computerOutOfMoneyStatement (x, y - cbet)
-            else if checkIfOutOfMoney (x - bet) then do 
+            dealerBeatBothStatement game state (x,y)
+        else do
+            putStrLn "Computer tied Dealer\n"
+            if checkIfOutOfMoney (x - bet) then do
                 playerOutOfMoneyStatement (x - bet, y)
-            else do
-                play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y - cbet)
-            else do
-                putStrLn "Computer tied Dealer\n"
-                if checkIfOutOfMoney (x - bet) then do
-                    playerOutOfMoneyStatement (x - bet, y)
-                else do 
-                    play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y)
+            else do 
+                play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y)
     else if cBust == 1 then do 
         putStrLn "\nComputer Bust"
         if getHandValue playerHand > getHandValue dealerHand then do
             putStrLn "Player beat Dealer\n"
             if checkIfOutOfMoney (y - cbet) then do
-                computerOutOfMoneyStatement (x, y - cbet)
+                computerOutOfMoneyStatement (x + bet, y - cbet)
             else do 
                 play game (State ([], [], [], deck) 0 (x + bet) 0 0 count 0 0 0 0) (x + bet, y - cbet) 
         else if getHandValue playerHand < getHandValue dealerHand then do
             putStrLn "Dealer beat Player\n"
-            if checkIfOutOfMoney (y - cbet) && checkIfOutOfMoney (x - bet) then do
-                bothOutOfMoneyStatement (x - bet , y - cbet)
-            else if checkIfOutOfMoney (y - cbet) then do
-                computerOutOfMoneyStatement (x, y - cbet)
-            else if checkIfOutOfMoney (x - bet) then do 
-                playerOutOfMoneyStatement (x - bet, y)
-            else do
-                play game (State ([], [], [], deck) 0 (x - bet) 0 0 count 0 0 0 0) (x - bet, y - cbet)
+            dealerBeatBothStatement game state (x,y)
         else do
             putStrLn "Player tied Dealer\n"
             if checkIfOutOfMoney (y - cbet) then do
@@ -337,23 +323,23 @@ winnerCheckerIfAllStand game state (x,y) = let (State (playerHand, computerHand,
     let dealerValue = getHandValue dealerHand
     if  playerValue > dealerValue then do
         putStrLn "\nPlayer beat Dealer"
-        checkComputerWinPlayerWin game state (x + bet,y)
+        checkComputerWin game state (x + bet,y)
     else if playerValue < dealerValue then do
         putStrLn "\nDealer beat Player"
-        checkComputerWinPlayerWin game state (x - bet,y)
+        checkComputerWin game state (x - bet,y)
     else do
         putStrLn "\nPlayer tied Dealer"
-        checkComputerWinPlayerWin game state (x,y)
+        checkComputerWin game state (x,y)
 
--- if the computer won check if the player won as well
-checkComputerWinPlayerWin :: (Action -> State -> Result) -> State -> Balances -> IO Balances
-checkComputerWinPlayerWin game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
+-- if the computer won check aswell as check if either player or computer is out of money
+checkComputerWin :: (Action -> State -> Result) -> State -> Balances -> IO Balances
+checkComputerWin game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
     let computerValue = getHandValue computerHand
     let dealerValue = getHandValue dealerHand
     if computerValue > dealerValue then do 
         putStrLn "Computer beat Dealer\n"
         if checkIfOutOfMoney x then do
-            playerOutOfMoneyStatement (x,y)
+            playerOutOfMoneyStatement (x,y + cbet)
         else do 
             play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x, y + bet)
     else if computerValue == dealerValue then do 
@@ -364,10 +350,12 @@ checkComputerWinPlayerWin game state (x,y) = let (State (playerHand, computerHan
             play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x, y)
     else do
         putStrLn "Dealer beat Computer"
-        if checkIfOutOfMoney x then do
-            playerOutOfMoneyStatement (x,y)
-        else if checkIfOutOfMoney (y - cbet) then do 
-            computerOutOfMoneyStatement (x,y)
+        if checkIfOutOfMoney x && checkIfOutOfMoney (y -cbet) then do
+            bothOutOfMoneyStatement (x,y - cbet)
+        else if checkIfOutOfMoney x then do 
+            playerOutOfMoneyStatement (x,y - cbet)
+        else if checkIfOutOfMoney (y - cbet) then do
+            computerOutOfMoneyStatement (x, y - cbet)
         else do 
             play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x, y - cbet)
 
@@ -376,6 +364,17 @@ checkIfOutOfMoney :: Double -> Bool
 checkIfOutOfMoney balance 
     | balance == 0 = True
     | otherwise = False
+
+dealerBeatBothStatement :: (Action -> State -> Result) -> State -> Balances -> IO Balances
+dealerBeatBothStatement game state (x,y) = let (State (playerHand, computerHand, dealerHand, deck) bet cbet count turn pStand cStand dStand pBust cBust) = state in do
+    if checkIfOutOfMoney (y - cbet) && checkIfOutOfMoney (x - bet) then do
+        bothOutOfMoneyStatement (x - bet, y - cbet)
+    else if checkIfOutOfMoney (y - cbet) then do
+        computerOutOfMoneyStatement (x - bet, y - cbet)
+    else if checkIfOutOfMoney (x - bet) then do 
+        playerOutOfMoneyStatement (x - bet, y - cbet)
+    else do
+        play game (State ([], [], [], deck) 0 0 count 0 0 0 0 0 0) (x - bet, y - cbet)
 
 -- output the proper statement if the player has ran out of money and restart game
 playerOutOfMoneyStatement :: Balances -> IO Balances
@@ -427,12 +426,12 @@ getBet balance = do
         return bet
 
 
--- dealerPlay blackjack (Continue `state`) (100,100)
+-- dealerPlay blackjack (ContinueGame `state`) (100,100)
 allTie :: State
 allTie = State ([('h',10),('h',10)], [('h',10),('h',10)], [('h',10),('h',10)], [('h',6)]) 10 10 0 2 1 1 0 0 0
 
-allLose :: State
-allLose = State ([('h',10),('h',9)], [('h',10),('h',9)], [('h',10),('h',10)], [('h',6)]) 10 10 0 2 1 1 0 0 0
+allStandAllLose :: State
+allStandAllLose = State ([('h',10),('h',9)], [('h',10),('h',9)], [('h',10),('h',10)], [('h',6)]) 10 10 0 2 1 1 0 0 0
 
 playerWinCompWin :: State
 playerWinCompWin = State ([('h',10),('h',11)], [('h',10),('h',11)], [('h',10),('h',10)], [('h',6)]) 10 10 0 2 1 1 0 0 0
@@ -452,12 +451,23 @@ compWinPlayerTie = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('
 dealerBust :: State
 dealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6)]) 10 10 0 2 1 1 0 0 0
 
-computerNoMoney :: State
-computerNoMoney = State ([('h',10),('h',11)], [('h',10),('h',9)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 0
+compStandNoMoneyPlayerWin :: State
+compStandNoMoneyPlayerWin = State ([('h',10),('h',11)], [('h',10),('h',9)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 0
 
-playerNoMoney :: State
-playerNoMoney = State ([('h',10),('h',9)], [('h',10),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 0
+playerStandNoMoneyCompWin :: State
+playerStandNoMoneyCompWin = State ([('h',10),('h',9)], [('h',10),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 0
 
--- computerPlay blackjack (Continue `state`) (100,100)
-compBustDealerBust :: State
-compBustDealerBust = State ([('h',10),('h',10)], [('h',10),('h',11)], [('h',10),('h',6)], [('h',6), ('h',6)]) 10 100 0 1 0 0 0 0 0
+compBustNoMoneyPlayerWin :: State
+compBustNoMoneyPlayerWin = State ([('h',10),('h',11)], [('h',11),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 1
+
+compBustNoMoneyPlayerLose :: State
+compBustNoMoneyPlayerLose = State ([('h',10),('h',9)], [('h',11),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 0 1
+
+playerBustNoMoneyCompWin :: State
+playerBustNoMoneyCompWin = State ([('h',11),('h',11)], [('h',11),('h',10)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 1 0
+
+playerBustNoMoneyCompLose :: State
+playerBustNoMoneyCompLose = State ([('h',11),('h',11)], [('h',9),('h',10)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 1 0
+
+bothBustBothNoMoney :: State
+bothBustBothNoMoney = State ([('h',11),('h',11)], [('h',11),('h',11)], [('h',10),('h',10)], [('h',6)]) 100 100 0 2 1 1 0 1 1
