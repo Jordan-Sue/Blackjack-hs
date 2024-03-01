@@ -29,11 +29,6 @@ data Action = Hit
 -- (Suit, Number)
 type Balances = (Double, Double)
 
--- type PlayerHand = [Card]
--- type DealerHand = [Card]
--- type ComputerHand = [Card]
--- type Deck = [Card]
-
 -- Taken from https://wiki.haskell.org/Random_shuffle
 shuffle :: [a] -> IO [a]
 shuffle xs = do
