@@ -63,13 +63,13 @@ blackjack Hit (State (playerHand, computerHand, dealerHand, firstCard:tailDeck) 
     | otherwise = checkBust (State (playerHand, computerHand, firstCard:dealerHand, tailDeck) bet cbet cunit (updateCount firstCard count) 0 pStand cStand dStand pBust cBust)
 
 blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand cStand dStand pBust cBust)
-    | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 3
+    | turn == 0 && cStand == 1 && dStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 0
     | turn == 0 && cStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 2 1 cStand dStand pBust cBust)
     | turn == 0 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 1 1 cStand dStand pBust cBust)
-    | turn == 1 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 3
+    | turn == 1 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 0
     | turn == 1 && dStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 0 pStand 1 dStand pBust cBust)
     | turn == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 2 pStand 1 dStand pBust cBust)
-    | turn == 2 && pStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 3
+    | turn == 2 && pStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 0
     | turn == 2 && pStand == 1 = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 1 pStand cStand 1 pBust cBust)
     | otherwise = checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count 0 pStand cStand 1 pBust cBust)
 
@@ -78,8 +78,10 @@ blackjack Stand (State (playerHand, computerHand, dealerHand, deck) bet cbet cun
 checkBust :: State -> Result
 checkBust (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand cStand dStand pBust cBust)
     | getHandValue dealerHand > 21 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust cBust) 2
-    | getHandValue playerHand > 21 && cBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand 1 cBust) 4
-    | getHandValue computerHand > 21 && pBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust 1) 4
+    | getHandValue playerHand > 21 && cBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand 1 cBust) 0
+    | getHandValue computerHand > 21 && pBust == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust 1) 0
+    | getHandValue computerHand > 21 && dStand == 1 && pStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn 1 cStand dStand 1 cBust) 0
+    | getHandValue playerHand > 21 && dStand == 1 && cStand == 1 = EndOfGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn 1 cStand dStand 1 cBust) 0
     | getHandValue playerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn 1 cStand dStand 1 cBust)
     | getHandValue computerHand > 21 = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand 1 dStand pBust 1)
     | otherwise = ContinueGame (State (playerHand, computerHand, dealerHand, deck) bet cbet cunit count turn pStand cStand dStand pBust cBust)
